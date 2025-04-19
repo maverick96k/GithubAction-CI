@@ -6,17 +6,13 @@ on:
       - main
 
 env:
-  DOCKER_HOST: tcp://localhost:2375   # Fix: Point to localhost
-  DOCKER_TLS_CERTDIR: ""              # Disable TLS
   SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
   SONAR_LOGIN: ${{ secrets.SONAR_LOGIN }}
 
 jobs:
   build:
     name: Build Job
-    runs-on: ubuntu-latest
-    container:
-      image: maverick96k/maven-akshay-docker-agent:v2
+    runs-on: self-hosted
     defaults:
       run:
         working-directory: java-maven-sonar-argocd-helm-k8s/spring-boot-app
@@ -31,50 +27,43 @@ jobs:
 
   test:
     name: Unit Test Job
-    runs-on: ubuntu-latest
-    container:
-      image: maverick96k/maven-akshay-docker-agent:v2
+    runs-on: self-hosted
+    needs: build
     defaults:
       run:
         working-directory: java-maven-sonar-argocd-helm-k8s/spring-boot-app
-    needs: build
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
 
       - name: Run unit tests
         run: |
-          echo "Running unit tests... This will take about 60 seconds."
+          echo "Running unit tests..."
           mvn test
 
   sonarqube:
     name: Code Quality (SonarQube)
-    runs-on: ubuntu-latest
-    container:
-      image: maverick96k/maven-akshay-docker-agent:v2
+    runs-on: self-hosted
+    needs: test
     defaults:
       run:
         working-directory: java-maven-sonar-argocd-helm-k8s/spring-boot-app
-    needs: test
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
 
       - name: SonarQube Scan
         run: |
-          echo "Scanning code..."
+          echo "Scanning code with SonarQube..."
           mvn sonar:sonar -Dsonar.host.url=${SONAR_HOST_URL} -Dsonar.login=${SONAR_LOGIN}
 
   dockerization:
     name: Docker Build & Push
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     needs: sonarqube
-    services:
-      docker:
-        image: docker:19.03-dind
-        options: --privileged
-        ports:
-          - 2375:2375   # Expose Docker daemon on port 2375
+    defaults:
+      run:
+        working-directory: java-maven-sonar-argocd-helm-k8s/spring-boot-app
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -90,7 +79,7 @@ jobs:
 
       - name: Build and push Docker image
         run: |
-          whoami
+          echo "Building Docker image..."
           docker build -t githubactions-cicd-demo:latest .
           docker tag githubactions-cicd-demo:latest ${{ secrets.DOCKER_USERNAME }}/githubactions-cicd-demo:latest
           docker push ${{ secrets.DOCKER_USERNAME }}/githubactions-cicd-demo:latest
