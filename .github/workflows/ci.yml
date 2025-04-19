@@ -24,6 +24,11 @@ jobs:
         run: |
           echo "Compiling the code..."
           mvn clean package  # Ensure this creates the JAR file in the target folder
+          
+      - name: List target directory
+        run: |
+          echo "Listing contents of target directory..."
+          ls -la target/  # List files in the target directory to confirm the JAR
 
   test:
     name: Unit Test Job
@@ -79,9 +84,13 @@ jobs:
 
       - name: Ensure the JAR file is available
         run: |
-          # If the JAR is not located at target/spring-boot-web.jar, ensure it's renamed
           echo "Checking for the presence of the JAR file..."
-          ls -la target/  # Lists files in the target directory to confirm the JAR
+          if [ -f target/spring-boot-web.jar ]; then
+            echo "JAR file found!"
+          else
+            echo "JAR file not found in target/ directory. Exiting..."
+            exit 1
+          fi
 
       - name: Build and push Docker image
         run: |
