@@ -6,8 +6,8 @@ on:
       - main
 
 env:
-  DOCKER_HOST: tcp://docker:2375
-  DOCKER_TLS_CERTDIR: ""
+  DOCKER_HOST: tcp://localhost:2375   # Fix: Point to localhost
+  DOCKER_TLS_CERTDIR: ""              # Disable TLS
   SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
   SONAR_LOGIN: ${{ secrets.SONAR_LOGIN }}
 
@@ -73,6 +73,8 @@ jobs:
       docker:
         image: docker:19.03-dind
         options: --privileged
+        ports:
+          - 2375:2375   # Expose Docker daemon on port 2375
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -90,5 +92,5 @@ jobs:
         run: |
           whoami
           docker build -t githubactions-cicd-demo:latest .
-          docker tag gitlab-cicd-demo:latest ${{ secrets.DOCKER_USERNAME }}/githubactions-cicd-demo:latest
+          docker tag githubactions-cicd-demo:latest ${{ secrets.DOCKER_USERNAME }}/githubactions-cicd-demo:latest
           docker push ${{ secrets.DOCKER_USERNAME }}/githubactions-cicd-demo:latest
