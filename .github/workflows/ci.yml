@@ -23,12 +23,27 @@ jobs:
       - name: Compile the code
         run: |
           echo "Compiling the code..."
-          mvn clean package  # Ensure this creates the JAR file in the target folder
+          mvn clean package
           
-      - name: List target directory
+      - name: List contents of the project directory
+        run: |
+          echo "Listing project directory contents..."
+          ls -la  # List all files in the project root to ensure the 'target/' folder is there
+
+      - name: List contents of target directory
         run: |
           echo "Listing contents of target directory..."
-          ls -la target/  # List files in the target directory to confirm the JAR
+          ls -la target/  # List the contents of 'target/' to verify if the JAR is created
+
+      - name: Check for JAR file
+        run: |
+          echo "Checking for the presence of the JAR file..."
+          if [ -f target/spring-boot-web.jar ]; then
+            echo "JAR file found!"
+          else
+            echo "JAR file not found in target/ directory. Exiting..."
+            exit 1
+          fi
 
   test:
     name: Unit Test Job
